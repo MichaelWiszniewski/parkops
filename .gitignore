@@ -1,0 +1,10 @@
+build/
+lib/
+.vscode/
+.idea/
+.classpath
+.project
+.settings/
+bin/
+*.class
+.DS_Store

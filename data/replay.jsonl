@@ -1,0 +1,3 @@
+{"tool": "READ_BOOKING", "bookingId": "B1", "targetId": ""}
+{"tool": "LIST_ALTERNATIVES", "bookingId": "B1", "targetId": ""}
+{"tool": "PROPOSE_REASSIGNMENT", "bookingId": "B1", "targetId": "B12"}

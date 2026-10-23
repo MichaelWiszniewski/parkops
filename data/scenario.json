@@ -1,0 +1,36 @@
+{
+  "policyVersion": 1,
+  "booking": {
+    "id": "B1",
+    "spaceId": "A17",
+    "durationHours": 3,
+    "version": 0,
+    "requiresAccessible": true
+  },
+  "spaces": [
+    {
+      "id": "A17",
+      "open": false,
+      "occupied": true,
+      "accessible": false
+    },
+    {
+      "id": "B12",
+      "open": true,
+      "occupied": false,
+      "accessible": false
+    },
+    {
+      "id": "C03",
+      "open": true,
+      "occupied": false,
+      "accessible": true
+    },
+    {
+      "id": "D09",
+      "open": true,
+      "occupied": true,
+      "accessible": true
+    }
+  ]
+}
