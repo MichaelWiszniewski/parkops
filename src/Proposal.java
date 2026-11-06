@@ -16,6 +16,11 @@ public final class Proposal {
         this.status = status; this.bookingVersion = bookingVersion; this.policyVersion = policyVersion;
     }
 
+    /** A new snapshot identical except for its status. This object is unchanged. */
+    public Proposal withStatus(ProposalStatus newStatus) {
+        return new Proposal(id, bookingId, targetId, newStatus, bookingVersion, policyVersion);
+    }
+
     public Identifier getId() { return id; }
     public Identifier getBookingId() { return bookingId; }
     public Identifier getTargetId() { return targetId; }

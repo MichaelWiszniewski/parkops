@@ -1,3 +1,4 @@
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,12 +12,28 @@ public final class StudentApplication {
     private static final String BOOKING_ID = "B1";
     private final ParkingRegistry registry;
     private final ReassignmentPolicy policy = new PolicyV1();
-    private final ProposalManager manager;
+    private final CommitLog commits = new CommitLog();
+    private final NotificationLog notifications = new NotificationLog();
+    private final ProposalManager manager;   // the only holder of the ProposalStore
 
     public StudentApplication() {
         this.registry = fixtureRegistry();
-        this.manager = new ProposalManager(registry, new ProposalStore(), policy, new SequentialIdGenerator());
+        this.manager = new ProposalManager(registry, new ProposalStore(), policy, new SequentialIdGenerator(),
+                commits, notifications);
     }
+
+    // ---- separate operator actions (never called by the agent loop) -----------------------------------------------
+
+    public DecisionOutcome approve(String proposalId) { return manager.approve(proposalId); }
+    public DecisionOutcome reject(String proposalId) { return manager.reject(proposalId); }
+    public ExecutionOutcome execute(String proposalId) { return manager.execute(proposalId); }
+
+    public Optional<ProposalStatus> proposalStatus(String proposalId) {
+        return manager.findProposal(proposalId).map(Proposal::getStatus);
+    }
+    public int commitCount() { return commits.count(); }
+    public int notificationCount() { return notifications.count(); }
+    public List<Notification> notifications() { return notifications.all(); }
 
     /** Builds the registry from the supplied raw fixture without altering it. */
     static ParkingRegistry fixtureRegistry() {

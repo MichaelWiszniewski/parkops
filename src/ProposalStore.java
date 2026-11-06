@@ -13,6 +13,22 @@ public final class ProposalStore {
         if (proposals.putIfAbsent(p.getId(), p) != null) throw new IllegalStateException("proposal id already stored");
     }
 
+    /**
+     * Swaps in a new snapshot of an EXISTING proposal. Only the status may differ: id, booking, target and
+     * captured versions must match, so this cannot introduce a different proposal. Which status changes are
+     * legal is decided by ProposalManager, the only holder of this store in the application.
+     */
+    public void replace(Proposal next) {
+        if (next == null) throw new IllegalArgumentException("proposal required");
+        Proposal current = proposals.get(next.getId());
+        if (current == null) throw new IllegalStateException("no stored proposal " + next.getId());
+        if (!current.getBookingId().equals(next.getBookingId()) || !current.getTargetId().equals(next.getTargetId())
+                || current.getBookingVersion() != next.getBookingVersion()
+                || current.getPolicyVersion() != next.getPolicyVersion())
+            throw new IllegalStateException("replace may change only the status");
+        proposals.put(next.getId(), next);
+    }
+
     public Optional<Proposal> get(Identifier proposalId) { return Optional.ofNullable(proposals.get(proposalId)); }
 
     /** Returns an unmodifiable copy, never the store's own collection. */
