@@ -18,4 +18,7 @@ public final class ParkingRegistry {
 
     public Optional<Space> findSpace(Identifier id) { return Optional.ofNullable(spaces.get(id)); }
     public Optional<Booking> findBooking(Identifier id) { return Optional.ofNullable(bookings.get(id)); }
+
+    /** Every space in insertion order, as an unmodifiable copy. Space objects are immutable. */
+    public List<Space> allSpaces() { return List.copyOf(spaces.values()); }
 }
