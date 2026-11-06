@@ -55,6 +55,9 @@ public final class StudentApplication {
     public DecisionOutcome reject(String proposalId) { return manager.reject(proposalId); }
     public ExecutionOutcome execute(String proposalId) { return manager.execute(proposalId); }
 
+    /** Immutable snapshot of a proposal for the operator to review. */
+    public Optional<Proposal> proposal(String proposalId) { return manager.findProposal(proposalId); }
+
     public Optional<ProposalStatus> proposalStatus(String proposalId) {
         return manager.findProposal(proposalId).map(Proposal::getStatus);
     }
