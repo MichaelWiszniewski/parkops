@@ -15,11 +15,38 @@ public final class StudentApplication {
     private final CommitLog commits = new CommitLog();
     private final NotificationLog notifications = new NotificationLog();
     private final ProposalManager manager;   // the only holder of the ProposalStore
+    private final PeriodicDetector detector;
 
     public StudentApplication() {
         this.registry = fixtureRegistry();
         this.manager = new ProposalManager(registry, new ProposalStore(), policy, new SequentialIdGenerator(),
                 commits, notifications);
+        this.detector = new PeriodicDetector(registry, manager, policy);
+    }
+
+    // ---- periodic detection (detection only; investigations are started separately) ---------------------------
+
+    public TickResult tick(long timeSeconds) { return detector.tick(timeSeconds); }
+    public boolean retryDetection(String bookingId) {
+        return Identifier.isValid(bookingId) && detector.retry(new Identifier(bookingId));
+    }
+
+    /** Demonstration trace for results/: boundary ticks 0, 59, 60, 120 and a backwards tick. */
+    public String periodicTrace() {
+        StringBuilder out = new StringBuilder();
+        for (long t : new long[]{0, 59, 60, 30, 119, 120}) {
+            TickResult r = tick(t);
+            out.append(String.format("tick(%3d) -> %-14s", t, r.status()));
+            for (WorkItem w : r.workItems())
+                out.append(" work: ").append(w.bookingId().getValue()).append(" on closed ")
+                   .append(w.closedSpaceId().getValue()).append(" (booking v").append(w.bookingVersion())
+                   .append(", policy v").append(w.policyVersion()).append(')');
+            if (r.status() == TickResult.Status.SCANNED && r.workItems().isEmpty()) out.append(" no new work");
+            if (r.status() == TickResult.Status.NOT_DUE) out.append(" before the next 60 s boundary");
+            if (r.status() == TickResult.Status.CLOCK_REJECTED) out.append(" time went backwards; schedule unchanged");
+            out.append('\n');
+        }
+        return out.toString().stripTrailing();
     }
 
     // ---- separate operator actions (never called by the agent loop) -----------------------------------------------

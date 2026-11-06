@@ -22,6 +22,9 @@ public final class Main {
             } else if(mode.equals("agent-scripted")) {
                 System.out.println("REPLAY D2 workflow; not a live model run.");
                 System.out.println(app.run(Fixture.replay(),6));
+            } else if(mode.equals("periodic")) {
+                System.out.println("PERIODIC detection with controlled time; no waiting, no model call.");
+                System.out.println(app.periodicTrace());
             } else if(mode.equals("live")) {
                 String host=System.getenv("OLLAMA_CHAT_URL"),model=System.getenv("OLLAMA_MODEL");
                 if(host==null || model==null || host.isBlank() || model.isBlank()) {
@@ -31,7 +34,7 @@ public final class Main {
                 System.out.println("LIVE provider selected; outcome must be recorded from actual execution.");
                 System.out.println(app.run(new OllamaProvider(URI.create(host),model,Duration.ofSeconds(30)),6));
             } else {
-                System.err.println("Modes: fixture | scripted (D1) | agent-scripted (D2) | live (D2)");System.exit(2);
+                System.err.println("Modes: fixture | scripted (D1) | agent-scripted (D2) | periodic (D2) | live (D2)");System.exit(2);
             }
         } catch(UnsupportedOperationException ex) {
             System.err.println("STARTER_NOT_IMPLEMENTED: "+ex.getMessage());System.exit(1);

@@ -102,6 +102,15 @@ public final class ProposalManager {
         return ExecutionOutcome.COMMITTED;
     }
 
+    /** True if a PENDING or APPROVED proposal exists for this booking at these captured versions. */
+    public boolean hasActiveProposal(Identifier bookingId, int bookingVersion, int policyVersion) {
+        for (Proposal p : store.findByBooking(bookingId))
+            if ((p.getStatus() == ProposalStatus.PENDING || p.getStatus() == ProposalStatus.APPROVED)
+                    && p.getBookingVersion() == bookingVersion && p.getPolicyVersion() == policyVersion)
+                return true;
+        return false;
+    }
+
     /** Read-only snapshot for the operator and tests; never the store's own objects to mutate. */
     public Optional<Proposal> findProposal(String proposalId) { return find(proposalId); }
 
