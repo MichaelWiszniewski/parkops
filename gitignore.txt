@@ -1,9 +1,0 @@
-build/
-lib/
-.connection-build/
-.DS_Store
-.vscode/
-.idea/
-*.class
-.env
-*.key
