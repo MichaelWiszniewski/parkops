@@ -1,18 +1,27 @@
-# ParkOps: D1 (design and executable proposal path)
+# ParkOps: D2 (working supervised agent)
 
 EECS 3311 B, Fall 2026. Individual project.
-Student: Michael Wiszniewski 
+Student: Michael Wiszniewski
 Student Number: 220 179 131
 
-## What D1 does
+## What D2 does
 
-D1 builds the checked domain model and the first step of the workflow. Given booking B1 (which is in the closed space A17) and a suggested new space, the program either creates a PENDING proposal or refuses the request and says why. It never moves a booking. Approval, carrying out a proposal, the agent loop and a live model are not part of D1. All data is synthetic.
+D2 extends my D1 code into a supervised agent. The full workflow is:
+
+1. **Detect.** `tick(time)` finds bookings on closed spaces (B1 on A17) and emits a work item. It only detects.
+2. **Investigate.** `run()` asks the model for one tool request at a time. Java validates each request, runs the tool and sends the result back to the model as the next message. At most 6 model calls.
+3. **Stop at PENDING.** A valid proposal is stored as PENDING. Nothing moves.
+4. **Operator decision.** A separate human action approves, rejects or defers the proposal. The model can never approve.
+5. **Execute with fresh checks.** Execution rechecks the proposal, the booking and policy versions and the target, then commits once. Repeating it is a DUPLICATE.
+
+All data is synthetic. Notifications are simulated records; nothing is sent.
 
 ## What you need
 
 - JDK 21. I developed and ran this with OpenJDK 21.0.12.1 on macOS (Apple silicon).
 - Bash (macOS, Linux, or Git Bash on Windows). The starter also provides run.ps1 and setup-junit.ps1 for PowerShell.
-- Internet access once, for setup-junit.sh. It downloads the pinned JUnit 6.0.3 jar and checks its checksum.
+- Internet access once, for setup-junit.sh, which downloads the pinned JUnit 6.0.3 jar and checks its checksum.
+- For live mode only: your own Gemini API key from Google AI Studio (free tier). No paid account is needed.
 
 ## How to run it
 
@@ -21,62 +30,75 @@ From the project root (the folder that contains run.sh):
 ```
 bash run.sh compile
 bash run.sh check
-bash run.sh run scripted
-bash setup-junit.sh
+bash setup-junit.sh          # once
 bash run.sh test
+bash run.sh run scripted     # D2 replay workflow
+bash run.sh run periodic     # periodic detection trace
+bash run.sh run live         # D2 live Gemini workflow (interactive)
 ```
 
-- compile builds everything with all compiler warnings turned on.
-- check runs the course's supplied public checks. These are plain Java, not JUnit.
-- run scripted is the D1 demonstration. It feeds the fixed target B12 and prints the proposal and then the booking. It is a replay of a fixed answer, not a live model.
-- setup-junit.sh is only needed once. It downloads the pinned JUnit jar.
-- test runs the supplied JUnit tests plus my own tests in test/junit/StudentTests.java.
+| Command | What it does |
+|---|---|
+| `run.sh check` | The course's supplied public checks. Plain Java, not JUnit. |
+| `run.sh test` | All JUnit tests: the supplied ones and mine in test/junit/. |
+| `run.sh run scripted` | The prepared D2 demonstration with the ReplayProvider. It is labelled REPLAY and is not a live model. The operator decision is scripted (APPROVE) so the run is repeatable. |
+| `run.sh run periodic` | Ticks 0, 59, 60, a backwards tick, 119 and 120 with controlled time. No waiting and no model call. |
+| `run.sh run live` | The same workflow with Gemini. See below. |
+| `run.sh run agent-scripted` | The replay agent loop only, stopping at the pending proposal. |
+| `run.sh run d1-scripted` | The original D1 demonstration (this was `run scripted` in D1). |
+| `run.sh run` | Prints the raw fixture data. |
 
-You can also run `bash run.sh run` to print the raw fixture data.
+### Live mode
 
-The real output of these commands, with the date and my environment, is saved in results/d1.txt.
+Run `bash run.sh run live` directly in a terminal. Do not pipe or redirect it, because the supplied helper reads the key at a hidden prompt.
 
-## What the program handles
+- Paste your Gemini API key at the prompt. If `GEMINI_API_KEY` is set in the environment, that value is used instead. The key is never printed or saved.
+- The model defaults to `gemini-3.5-flash-lite`. `GEMINI_MODEL` overrides it.
+- If the model's investigation ends with a pending proposal, the terminal asks the operator: `a` (approve), `r` (reject) or `d` (defer). Live mode never commits without this separate answer. End of input or an unrecognised answer means defer.
+- The transcript, including the model id, date and environment, is saved to `results/live-run-<date>-<time>.txt`.
 
-For booking B1:
+To capture all the non-interactive evidence into results/ at once: `bash capture-results.sh`.
 
-- Target B12: a PENDING proposal is created (PROP_1, booking version 0, policy version 1). B1 stays at A17, version 0.
-- Target D09: refused because it is occupied. No proposal is created and nothing changes.
-- An unknown target such as Z99: refused as an unknown target. No proposal is created and nothing changes.
-- A badly formed or unknown id for the booking or the target: refused, with a reason that says which one.
+## Outcome names
 
-The run scripted command only feeds B12, because it uses the supplied Main. The D09 and unknown-target cases are run by the check and test commands.
+The brief lets me choose Java names; this is the mapping.
 
-If a request has more than one problem, the first one in this list is reported: target id badly formed, booking id badly formed, booking unknown, target unknown, target is the booking's current space, target occupied, target not open.
+| Brief | My Java name | Where |
+|---|---|---|
+| NOT_APPROVED, STALE, UNAVAILABLE_OR_INELIGIBLE, COMMITTED, DUPLICATE | the same names | `ExecutionOutcome`, returned by `execute(id)` |
+| (proposal identity check) | UNKNOWN_PROPOSAL | `ExecutionOutcome` and `DecisionOutcome` |
+| approval / rejection | APPROVED, REJECTED; refused as NOT_PENDING | `DecisionOutcome`, returned by `approve(id)` / `reject(id)` |
+| AWAITING_APPROVAL, NO_ACTION, STEP_LIMIT, PROVIDER_ERROR | the same names | `RunStatus` in `RunResult`, returned by `runAgent(...)` |
+| request rejected (malformed, extra field, unknown tool, wrong booking) | INVALID_REQUEST observation with a `ProtocolError` | `ToolRequestParser` |
+| controlled tool rejection (order, stale, ineligible target) | TOOL_REJECTED observation | `InvestigationSession` |
+| clock rejection | CLOCK_REJECTED | `TickResult.Status`, returned by `tick(time)` |
 
-Policy version 1 deliberately ignores accessibility. That means both B12 and C03 are acceptable targets for B1, even though B1 needs an accessible space. The course uses this as an exercise in changing a policy later. It is not a realistic parking rule.
+Proposal statuses are exactly PENDING, APPROVED, REJECTED and EXECUTED (`ProposalStatus`).
 
-## How my code connects to the starter code
+## Supported scenario
 
-The starter gave a small public surface (DomainRules and StudentApplication) that the supplied checks call. I kept those methods and turned them into thin wrappers around my own classes.
-
-- DomainRules.requireDuration and DomainRules.requireIdentifier now call Duration.isValid and Identifier.isValid. They throw IllegalArgumentException when the value is not valid, so each rule exists in one place.
-- Creating a StudentApplication builds the parking data from the supplied Fixture, then sets up a ProposalManager with PolicyV1, a ProposalStore and a SequentialIdGenerator.
-- propose(targetId) calls ProposalManager.proposeReassignment(targetId, "B1"). If a proposal is created, it is returned as a ProposalView. If the request is refused, it throws IllegalArgumentException with the refusal message.
-- bookingSnapshot() returns an unchangeable map built from B1 in the registry. I renamed one key from requiresAccessible to accessibilityRequired so that it matches Booking.isAccessibilityRequired(). The raw Fixture is unchanged and still uses the old name.
-- run(...) is untouched. It is still the D2 placeholder, and the agent-scripted mode reports STARTER_NOT_IMPLEMENTED.
+The supplied ParkOps fixture: booking B1 at closed space A17 (3 hours, version 0, needs an accessible space) and spaces A17, B12, C03 and D09. Policy version 1: the target must differ from the current space and be open and not occupied. Accessibility is deliberately ignored, so B12 and C03 are both eligible. A model choosing either is correct.
 
 ## Known limitations
 
-- Repeating the same request creates another PENDING proposal for the same booking, versions and target.
-- D1 ends at PENDING. Nothing can approve, reject or carry out a proposal yet. My booking and space objects cannot be changed after they are created, so D2 will need a way for the registry and the store to replace them.
-- There is no live model. run scripted replays a fixed answer. The live and agent-scripted modes are for D2.
-- The program runs in one process, one step at a time, and keeps everything in memory. It makes no claims about concurrent use or saving data.
+- Single process, sequential and in memory. Nothing is saved between runs, and the checks are not safe under concurrent use.
+- Everything is in Java's default package, so access modifiers cannot hide `ProposalStore.replace`. Protection comes from reference ownership (only `ProposalManager` holds the store) and from `replace` refusing any change other than the status.
+- Responses wrapped in markdown code fences are rejected rather than cleaned up, so a model that adds fences uses up an attempt.
+- After a failed or rejected attempt, the periodic check does not retry the same booking and policy versions automatically. An operator retry or a version change is needed (the brief's conservative policy).
+- A STALE proposal can never succeed later, because booking versions only increase. An UNAVAILABLE_OR_INELIGIBLE one may succeed if the target becomes available again.
+- Calling `propose` directly (the D1 path) twice still creates two PENDING proposals. The periodic check avoids emitting duplicate automatic work.
+- The live run depends on Google's service and free-tier quota. A failure there is reported as PROVIDER_ERROR and commits nothing.
 
-## Starter files I reused
+## Starter and supplied files I reused
 
 Unchanged:
 
-- In src/: ChatMessage, Fixture, Main, MiniJson, ModelProvider, OllamaProvider, ProposalView, ReplayProvider.
+- In src/: ChatMessage, Fixture, MiniJson, ModelProvider, OllamaProvider (kept but unused; the live route now uses Gemini), ProposalView, ReplayProvider.
+- From the D2 Gemini Connection Pack (supplied EECS 3311 infrastructure): src/GeminiProvider.java and src/GeminiCredentials.java, unchanged. My contract tests use GeminiProvider's documented loopback test seam.
 - Scripts: run.sh, run.ps1, setup-junit.sh, setup-junit.ps1.
 - Supplied tests: test/plain/InfrastructureChecks.java, test/plain/PublicChecks.java, test/junit/InfrastructureTest.java, test/junit/SuppliedChecksTest.java.
-- Data and notes: data/scenario.json, data/replay.jsonl, START_HERE.md, STARTER_PROVENANCE.md, results.txt, results/README.md.
+- Data and notes: data/scenario.json, data/replay.jsonl, START_HERE.md, STARTER_PROVENANCE.md.
 
-Changed: DomainRules, StudentApplication, and test/junit/StudentTests.java (the starter placeholder was replaced with my tests). The starter templates README.md, TEST_PLAN.md, CHANGELOG.md and AI_USE.md were filled in.
+Changed: DomainRules (D1), StudentApplication, Main (new modes, Gemini live branch), and test/junit/StudentTests.java (D1). The starter's empty results.txt was removed because the evidence is in results/.
 
-Everything else in src/ was written for D1. DESIGN.pdf explains the design, and AI_USE.md lists the AI help I used.
+Everything else in src/ and test/junit/ was written for D1 or D2; CHANGELOG.md lists it. DESIGN.pdf explains the design, TEST_PLAN.md maps every acceptance case to its tests, and AI_USE.md lists the AI help I used.

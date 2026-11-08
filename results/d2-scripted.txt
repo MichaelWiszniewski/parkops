@@ -1,4 +1,4 @@
-Date: Fri  6 Nov 2026 14:35:30 EST
+Date: Sun  8 Nov 2026 15:58:21 EST
 Environment: Darwin 25.6.0 arm64 | openjdk version "21.0.12.1" 2026-08-18 LTS
 $ bash run.sh run scripted
 
@@ -13,7 +13,7 @@ INVESTIGATE (call limit 6)
          observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":true},"policyVersion":1}
   CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
          observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["B12","C03"]}
-  CALL 3 model:       {"tool":"PROPOSE_REASSIGNMENT","bookingId":"B1","targetId":"B12"}
+  CALL 3 model:       {"bookingId":"B1","tool":"PROPOSE_REASSIGNMENT","targetId":"B12"}
          observation: {"status":"AWAITING_APPROVAL","proposalId":"PROP_1","targetId":"B12"}
   OUTCOME AWAITING_APPROVAL proposal=PROP_1 calls=3 invalid=0 toolRejections=0
   Booking: B1 at A17 version 0
