@@ -1,0 +1,13 @@
+Date: Fri  6 Nov 2026 14:35:30 EST
+Environment: Darwin 25.6.0 arm64 | openjdk version "21.0.12.1" 2026-08-18 LTS
+$ bash run.sh run periodic
+
+PERIODIC detection with controlled time; no waiting, no model call.
+tick(  0) -> SCANNED        work: B1 on closed A17 (booking v0, policy v1)
+tick( 59) -> NOT_DUE        before the next 60 s boundary
+tick( 60) -> SCANNED        no new work
+tick( 30) -> CLOCK_REJECTED time went backwards; schedule unchanged
+tick(119) -> NOT_DUE        before the next 60 s boundary
+tick(120) -> SCANNED        no new work
+
+Exit status: 0

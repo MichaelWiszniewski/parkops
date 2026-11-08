@@ -1,0 +1,24 @@
+Date: Fri  6 Nov 2026 14:35:29 EST
+Environment: Darwin 25.6.0 arm64 | openjdk version "21.0.12.1" 2026-08-18 LTS
+$ bash run.sh test
+
+
+Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+INFRASTRUCTURE_CHECKS_PASS 31; localhost fake HTTP only; no live model or project solution verified.
+
+Test run finished after 1805 ms
+[        24 containers found      ]
+[         0 containers skipped    ]
+[        24 containers started    ]
+[         0 containers aborted    ]
+[        24 containers successful ]
+[         0 containers failed     ]
+[       160 tests found           ]
+[         0 tests skipped         ]
+[       160 tests started         ]
+[         0 tests aborted         ]
+[       160 tests successful      ]
+[         0 tests failed          ]
+
+Exit status: 0

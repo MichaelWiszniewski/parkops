@@ -1,0 +1,26 @@
+LIVE Gemini run (genuine model calls; not replay)
+Date: 2026-11-08T14:11:56.57232-05:00
+Command: bash run.sh run live
+Model: gemini-3.5-flash-lite
+Environment: Java 21.0.12.1, Mac OS X aarch64
+Operator: interactive terminal prompt (separate human action)
+DETECT tick(0) -> SCANNED work items: 1
+  work: B1 on closed A17 (booking v0, policy v1)
+INVESTIGATE (call limit 6)
+  SYSTEM PROMPT (737 chars)
+  GOAL:                Resolve the booking affected by the closure of A17.
+  CALL 1 model:       {"tool":"READ_BOOKING","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":true},"policyVersion":1}
+  CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["B12","C03"]}
+  CALL 3 model:       {"tool":"PROPOSE_REASSIGNMENT","bookingId":"B1","targetId":"B12"}
+         observation: {"status":"AWAITING_APPROVAL","proposalId":"PROP_1","targetId":"B12"}
+  OUTCOME AWAITING_APPROVAL proposal=PROP_1 calls=3 invalid=0 toolRejections=0
+  Booking: B1 at A17 version 0
+PENDING PROP_1: B1 -> B12 (captured booking v0, policy v1)
+OPERATOR decision (separate action): REJECT
+  reject(PROP_1) -> REJECTED
+  execute(PROP_1) -> NOT_APPROVED
+  proposal status now: REJECTED
+STATE booking B1 at A17 version 0; commits 0; simulated notifications 0
+DETECT tick(60) -> SCANNED work items: 0
