@@ -55,13 +55,14 @@ Claude broke D2 into steps and, for each design question, explained the relevant
 
 - What I decided: the proposal transition table (I filled in every state and action cell, and corrected the cells Claude pointed out were incomplete); keeping `Proposal` immutable and replacing snapshots in the store; making `ProposalManager` the owner of the transition rules; making `tick()` detection-only, with the investigation started separately (the alternative was `tick()` calling `run()`).
 - What Claude pointed out that changed my design: because the project uses Java's default package, a package-private store method would not be hidden, so the protection relies on reference ownership plus the store's same-proposal check. I recorded this as a limitation.
-- Diagrams and DESIGN.pdf text: I produced the D2 diagrams using diagrams.net. And DESIGN.pdf was written by me. For the creation of the diagrams and DESIGN.PDF, no generative AI was used. 
+- I drew the D2 diagrams in diagrams.net and wrote DESIGN.pdf myself. Claude reviewed several drafts and pointed out where diagrams and text did not match the code (for example signatures, enum values, a wrong state transition and the tick/run arrow), supplying the correct names and some suggested wording; I made the corrections. 
 - How I checked: I compared the state table and decisions against the overview and the D2 brief, and against the code.
 
 ### 6. D2 Java code
 
 Claude wrote the D2 classes listed in CHANGELOG.md (D2), following the decisions in item 5. It also wired in the supplied Gemini helper, which is unchanged course infrastructure.
 
+- What I changed: I did not modify the code Claude wrote; the design decisions it implements are mine (item 5)
 - How I checked: I ran compile, check, test, run scripted, run periodic and run live on my own machine (results/). I read understand all new java files. Claude also compiled and tested in its own sandbox with a stand-in JUnit 5 jar; that output is not part of my evidence.
 
 ### 7. D2 tests
@@ -74,5 +75,5 @@ Claude wrote the six D2 test files from the D2 acceptance cases D2-A to D2-N and
 
 Claude drafted the D2 updates to README.md, TEST_PLAN.md, CHANGELOG.md, results/README.md, this file and capture-results.sh.
 
-- What I changed or rejected: I added in the November 8 live runs to the README.md file. I was previously unable to get an unsuccessful or rejected model/tool interaction (like the D2 brief asked for), so I had to continue doing live runs until one appeared.
+- What I changed or rejected: I added in the November 8 live runs to the results/README.md file. I was previously unable to get an unsuccessful or rejected model/tool interaction (like the D2 brief asked for), so I had to continue doing live runs until one appeared.
 - How I checked: I compared each statement with the code and with the files in results/.
