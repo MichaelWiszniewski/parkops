@@ -22,7 +22,7 @@ public final class PeriodicDetector {
 
     private record Pair(Identifier bookingId, VersionStamp versions) { }
 
-    private final ParkingRegistry registry;
+    private final RegistryView registry;   // read-only: detection never changes bookings or spaces
     private final ProposalManager manager;
     private final ReassignmentPolicy policy;
     private final Set<Pair> handled = new HashSet<>();
@@ -31,7 +31,7 @@ public final class PeriodicDetector {
     private long lastTick;
     private long nextDue;
 
-    public PeriodicDetector(ParkingRegistry registry, ProposalManager manager, ReassignmentPolicy policy) {
+    public PeriodicDetector(RegistryView registry, ProposalManager manager, ReassignmentPolicy policy) {
         if (registry == null || manager == null || policy == null) throw new IllegalArgumentException("collaborators required");
         this.registry = registry; this.manager = manager; this.policy = policy;
     }

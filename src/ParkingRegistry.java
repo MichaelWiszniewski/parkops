@@ -6,11 +6,13 @@ import java.util.Optional;
 
 /**
  * Owns every space and booking. Contents are private; callers only receive immutable snapshots.
- * Mutators: moveBooking (the commit step, called only by ProposalManager.execute after validation) and two
+ * Read access is also available through the RegistryView interface, which is all that InvestigationSession and
+ * PeriodicDetector receive. Mutators: moveBooking (the commit step, called only by ProposalManager.execute after
+ * validation; RegistryBoundaryTests checks that no other src/ class calls it) and two
  * simulated external events, closeSpace and occupySpace. Each mutator checks every precondition before
  * writing anything, so a refused call leaves the registry unchanged.
  */
-public final class ParkingRegistry {
+public final class ParkingRegistry implements RegistryView {
     private final Map<Identifier, Space> spaces = new LinkedHashMap<>();
     private final Map<Identifier, Booking> bookings = new LinkedHashMap<>();
 
@@ -21,14 +23,14 @@ public final class ParkingRegistry {
             if (this.bookings.putIfAbsent(b.getId(), b) != null) throw new IllegalArgumentException("duplicate booking " + b.getId());
     }
 
-    public Optional<Space> findSpace(Identifier id) { return Optional.ofNullable(spaces.get(id)); }
-    public Optional<Booking> findBooking(Identifier id) { return Optional.ofNullable(bookings.get(id)); }
+    @Override public Optional<Space> findSpace(Identifier id) { return Optional.ofNullable(spaces.get(id)); }
+    @Override public Optional<Booking> findBooking(Identifier id) { return Optional.ofNullable(bookings.get(id)); }
 
     /** Every booking in insertion order, as an unmodifiable copy. Booking objects are immutable. */
-    public List<Booking> allBookings() { return List.copyOf(bookings.values()); }
+    @Override public List<Booking> allBookings() { return List.copyOf(bookings.values()); }
 
     /** Every space in insertion order, as an unmodifiable copy. Space objects are immutable. */
-    public List<Space> allSpaces() { return List.copyOf(spaces.values()); }
+    @Override public List<Space> allSpaces() { return List.copyOf(spaces.values()); }
 
     /**
      * Commit step. Releases the old space, occupies the target, moves the booking and increments its

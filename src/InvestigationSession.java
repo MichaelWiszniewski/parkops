@@ -12,14 +12,14 @@ import java.util.Optional;
  */
 public final class InvestigationSession {
     private final Identifier goal;
-    private final ParkingRegistry registry;
+    private final RegistryView registry;   // read-only: this session is driven by model output
     private final ProposalManager manager;
     private final ReassignmentPolicy policy;
 
     private VersionStamp readVersions;   // null until READ_BOOKING succeeds
     private boolean listed;
 
-    public InvestigationSession(Identifier goal, ParkingRegistry registry, ProposalManager manager, ReassignmentPolicy policy) {
+    public InvestigationSession(Identifier goal, RegistryView registry, ProposalManager manager, ReassignmentPolicy policy) {
         if (goal == null || registry == null || manager == null || policy == null)
             throw new IllegalArgumentException("collaborators required");
         this.goal = goal; this.registry = registry; this.manager = manager; this.policy = policy;
