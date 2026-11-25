@@ -11,7 +11,8 @@ import java.util.Map;
 public final class StudentApplication {
     private static final String BOOKING_ID = "B1";
     private final ParkingRegistry registry;
-    private final ReassignmentPolicy policy = new PolicyV1();
+    /** One shared policy object: every collaborator below sees a policy change at the same moment. */
+    private final ActivePolicy policy = new ActivePolicy(new PolicyV1());
     private final CommitLog commits = new CommitLog();
     private final NotificationLog notifications = new NotificationLog();
     private final ProposalManager manager;   // the only holder of the ProposalStore
