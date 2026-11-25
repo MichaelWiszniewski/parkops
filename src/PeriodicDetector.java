@@ -20,7 +20,7 @@ import java.util.Set;
 public final class PeriodicDetector {
     public static final long PERIOD_SECONDS = 60;
 
-    private record Pair(Identifier bookingId, int bookingVersion, int policyVersion) { }
+    private record Pair(Identifier bookingId, VersionStamp versions) { }
 
     private final ParkingRegistry registry;
     private final ProposalManager manager;
@@ -53,7 +53,7 @@ public final class PeriodicDetector {
     public boolean retry(Identifier bookingId) {
         Booking b = registry.findBooking(bookingId).orElse(null);
         if (b == null) return false;
-        return handled.remove(new Pair(bookingId, b.getVersion(), policy.getVersion()));
+        return handled.remove(new Pair(bookingId, VersionStamp.current(b, policy)));
     }
 
     /** Next boundary at which a tick will scan, or empty before the first tick. */
@@ -66,11 +66,11 @@ public final class PeriodicDetector {
         for (Booking b : registry.allBookings()) {
             Space space = registry.findSpace(b.getSpaceId()).orElse(null);
             if (space == null || space.isOpen()) continue;   // only bookings on closed spaces are affected
-            Pair pair = new Pair(b.getId(), b.getVersion(), policy.getVersion());
+            Pair pair = new Pair(b.getId(), VersionStamp.current(b, policy));
             if (handled.contains(pair)) continue;
             handled.add(pair);
-            if (manager.hasActiveProposal(b.getId(), pair.bookingVersion(), pair.policyVersion())) continue;
-            out.add(new WorkItem(b.getId(), space.getId(), pair.bookingVersion(), pair.policyVersion()));
+            if (manager.hasActiveProposal(b.getId(), pair.versions())) continue;
+            out.add(new WorkItem(b.getId(), space.getId(), pair.versions()));
         }
         return out;
     }

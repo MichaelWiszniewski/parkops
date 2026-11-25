@@ -50,7 +50,7 @@ public final class ProposalManager {
             case Ineligible i -> new Refused(i.getReason(), "Target space " + targetId + " refused: " + i.getReason() + ".");
             case Eligible e -> {
                 Proposal proposal = new Proposal(idGenerator.generate(), bookingId, targetId,
-                        ProposalStatus.PENDING, booking.get().getVersion(), policy.getVersion());
+                        ProposalStatus.PENDING, VersionStamp.current(booking.get(), policy));
                 store.save(proposal);
                 yield new Created(proposal);
             }
@@ -84,7 +84,7 @@ public final class ProposalManager {
 
         Booking booking = registry.findBooking(p.getBookingId())
                 .orElseThrow(() -> new IllegalStateException("proposal refers to a missing booking"));
-        if (booking.getVersion() != p.getBookingVersion() || policy.getVersion() != p.getPolicyVersion())
+        if (!p.getVersions().equals(VersionStamp.current(booking, policy)))
             return ExecutionOutcome.STALE;
 
         Optional<Space> target = registry.findSpace(p.getTargetId());
@@ -103,10 +103,10 @@ public final class ProposalManager {
     }
 
     /** True if a PENDING or APPROVED proposal exists for this booking at these captured versions. */
-    public boolean hasActiveProposal(Identifier bookingId, int bookingVersion, int policyVersion) {
+    public boolean hasActiveProposal(Identifier bookingId, VersionStamp versions) {
         for (Proposal p : store.findByBooking(bookingId))
             if ((p.getStatus() == ProposalStatus.PENDING || p.getStatus() == ProposalStatus.APPROVED)
-                    && p.getBookingVersion() == bookingVersion && p.getPolicyVersion() == policyVersion)
+                    && p.getVersions().equals(versions))
                 return true;
         return false;
     }

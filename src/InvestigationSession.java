@@ -16,8 +16,7 @@ public final class InvestigationSession {
     private final ProposalManager manager;
     private final ReassignmentPolicy policy;
 
-    private Integer readBookingVersion;   // null until READ_BOOKING succeeds
-    private Integer readPolicyVersion;
+    private VersionStamp readVersions;   // null until READ_BOOKING succeeds
     private boolean listed;
 
     public InvestigationSession(Identifier goal, ParkingRegistry registry, ProposalManager manager, ReassignmentPolicy policy) {
@@ -39,8 +38,7 @@ public final class InvestigationSession {
 
     private Observation read() {
         Booking b = currentBooking();
-        readBookingVersion = b.getVersion();
-        readPolicyVersion = policy.getVersion();
+        readVersions = VersionStamp.current(b, policy);
         listed = false;
         Map<String, Object> booking = new LinkedHashMap<>();
         booking.put("id", b.getId().getValue());
@@ -52,12 +50,12 @@ public final class InvestigationSession {
         out.put("status", "OK");
         out.put("tool", "READ_BOOKING");
         out.put("booking", booking);
-        out.put("policyVersion", readPolicyVersion);
+        out.put("policyVersion", readVersions.policyVersion());
         return ok(out);
     }
 
     private Observation list() {
-        if (readBookingVersion == null) return rejected("ORDER", "LIST_ALTERNATIVES requires READ_BOOKING first.");
+        if (readVersions == null) return rejected("ORDER", "LIST_ALTERNATIVES requires READ_BOOKING first.");
         if (stale()) return restart();
         Booking b = currentBooking();
         List<String> candidates = new ArrayList<>();
@@ -72,7 +70,7 @@ public final class InvestigationSession {
     }
 
     private Observation propose(Identifier target) {
-        if (readBookingVersion == null || !listed)
+        if (readVersions == null || !listed)
             return rejected("ORDER", "PROPOSE_REASSIGNMENT requires READ_BOOKING then LIST_ALTERNATIVES first.");
         if (stale()) return restart();
         return switch (manager.proposeReassignment(target.getValue(), goal.getValue())) {
@@ -89,11 +87,11 @@ public final class InvestigationSession {
     }
 
     private boolean stale() {
-        return currentBooking().getVersion() != readBookingVersion || policy.getVersion() != readPolicyVersion;
+        return !readVersions.equals(VersionStamp.current(currentBooking(), policy));
     }
 
     private Observation restart() {
-        readBookingVersion = null; readPolicyVersion = null; listed = false;
+        readVersions = null; listed = false;
         return rejected("STALE_INVESTIGATION", "Booking or policy version changed; call READ_BOOKING again.");
     }
 

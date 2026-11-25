@@ -23,8 +23,7 @@ public final class ProposalStore {
         Proposal current = proposals.get(next.getId());
         if (current == null) throw new IllegalStateException("no stored proposal " + next.getId());
         if (!current.getBookingId().equals(next.getBookingId()) || !current.getTargetId().equals(next.getTargetId())
-                || current.getBookingVersion() != next.getBookingVersion()
-                || current.getPolicyVersion() != next.getPolicyVersion())
+                || !current.getVersions().equals(next.getVersions()))
             throw new IllegalStateException("replace may change only the status");
         proposals.put(next.getId(), next);
     }
