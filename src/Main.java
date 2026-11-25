@@ -9,6 +9,7 @@ import java.util.List;
 
 /**
  * Command-line entry point. Modes:
+ *   d3-scripted     D3 policy-version-2 demonstration (replay and scripted operator; not a live model run)
  *   scripted        D2 replay workflow with a scripted operator (labelled; not a live model run)
  *   live            D2 workflow with Gemini and an interactive operator; also saved under results/
  *   periodic        periodic detection trace with controlled time
@@ -35,6 +36,11 @@ public final class Main {
                 WorkflowDemo.run(app, Fixture.replay(), OperatorConsole.scripted(OperatorDecision.APPROVE),
                         CALL_LIMIT, System.out::println);
             }
+            case "d3-scripted" -> {
+                System.out.println("REPLAY D3 policy-evolution workflow: ReplayProvider is a test double, not a live model.");
+                System.out.println("Operator decisions and the policy activation are scripted for repeatability.");
+                D3Demo.run(System.out::println);
+            }
             case "live" -> live(app);
             case "periodic" -> {
                 System.out.println("PERIODIC detection with controlled time; no waiting, no model call.");
@@ -53,7 +59,7 @@ public final class Main {
                 System.out.println("Booking: " + MiniJson.stringify(app.bookingSnapshot()));
             }
             default -> {
-                System.err.println("Modes: scripted | live | periodic | agent-scripted | d1-scripted | fixture");
+                System.err.println("Modes: d3-scripted | scripted | live | periodic | agent-scripted | d1-scripted | fixture");
                 System.exit(2);
             }
         }
