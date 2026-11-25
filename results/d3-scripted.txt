@@ -1,4 +1,4 @@
-Date: Wed 25 Nov 2026 14:55:16 EST
+Date: Wed 25 Nov 2026 15:57:36 EST
 Environment: Darwin 25.6.0 arm64 | openjdk version "21.0.12.1" 2026-08-18 LTS
 $ bash run.sh run d3-scripted
 
@@ -28,7 +28,7 @@ INVESTIGATE v1 investigation proposes B12 (replay, call limit 6)
          observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":true},"policyVersion":1}
   CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
          observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["B12","C03"]}
-  CALL 3 model:       {"bookingId":"B1","targetId":"B12","tool":"PROPOSE_REASSIGNMENT"}
+  CALL 3 model:       {"targetId":"B12","tool":"PROPOSE_REASSIGNMENT","bookingId":"B1"}
          observation: {"status":"AWAITING_APPROVAL","proposalId":"PROP_1","targetId":"B12"}
   OUTCOME AWAITING_APPROVAL proposal=PROP_1 calls=3 invalid=0 toolRejections=0
   Booking: B1 at A17 version 0
@@ -48,9 +48,9 @@ INVESTIGATE [D3-B][D3-H] fresh v2 investigation; model first ignores the list an
          observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":true},"policyVersion":2}
   CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
          observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["C03"]}
-  CALL 3 model:       {"bookingId":"B1","targetId":"B12","tool":"PROPOSE_REASSIGNMENT"}
+  CALL 3 model:       {"targetId":"B12","tool":"PROPOSE_REASSIGNMENT","bookingId":"B1"}
          observation: {"status":"TOOL_REJECTED","error":"NOT_ACCESSIBLE","message":"Target space B12 refused: NOT_ACCESSIBLE."}
-  CALL 4 model:       {"bookingId":"B1","targetId":"C03","tool":"PROPOSE_REASSIGNMENT"}
+  CALL 4 model:       {"targetId":"C03","tool":"PROPOSE_REASSIGNMENT","bookingId":"B1"}
          observation: {"status":"AWAITING_APPROVAL","proposalId":"PROP_2","targetId":"C03"}
   OUTCOME AWAITING_APPROVAL proposal=PROP_2 calls=4 invalid=0 toolRejections=1
   Booking: B1 at A17 version 0
@@ -72,7 +72,7 @@ INVESTIGATE [D3-G] v2 investigation for a non-requiring booking (replay, call li
          observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":false},"policyVersion":2}
   CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
          observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["B12","C03"]}
-  CALL 3 model:       {"bookingId":"B1","targetId":"B12","tool":"PROPOSE_REASSIGNMENT"}
+  CALL 3 model:       {"targetId":"B12","tool":"PROPOSE_REASSIGNMENT","bookingId":"B1"}
          observation: {"status":"AWAITING_APPROVAL","proposalId":"PROP_1","targetId":"B12"}
   OUTCOME AWAITING_APPROVAL proposal=PROP_1 calls=3 invalid=0 toolRejections=0
   Booking: B1 at A17 version 0

@@ -1,0 +1,7 @@
+Date: Wed 25 Nov 2026 15:57:40 EST
+Environment: Darwin 25.6.0 arm64 | openjdk version "21.0.12.1" 2026-08-18 LTS
+$ bash -c bash run.sh check >/dev/null && javac --release 21 -encoding UTF-8 -Xlint:all -cp "build:lib/junit-platform-console-standalone-6.0.3.jar" -d build/lint-tests test/junit/*.java && echo TESTS_LINT_OK
+
+TESTS_LINT_OK
+
+Exit status: 0
