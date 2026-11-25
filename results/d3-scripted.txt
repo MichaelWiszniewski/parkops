@@ -1,0 +1,84 @@
+Date: Wed 25 Nov 2026 14:55:16 EST
+Environment: Darwin 25.6.0 arm64 | openjdk version "21.0.12.1" 2026-08-18 LTS
+$ bash run.sh run d3-scripted
+
+REPLAY D3 policy-evolution workflow: ReplayProvider is a test double, not a live model.
+Operator decisions and the policy activation are scripted for repeatability.
+=== PART 1: baseline, policy v1, clean B1 fixture ===
+policy version: 1
+INVESTIGATE [D3-A] read and list only (replay, call limit 6)
+  SYSTEM PROMPT (737 chars)
+  GOAL:                Resolve the booking affected by the closure of A17.
+  CALL 1 model:       {"tool":"READ_BOOKING","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":true},"policyVersion":1}
+  CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["B12","C03"]}
+  CALL 3 model:       {"tool":"FINISH","bookingId":"B1","targetId":""}
+         observation: {"status":"NO_ACTION"}
+  OUTCOME NO_ACTION calls=3 invalid=0 toolRejections=0
+  Booking: B1 at A17 version 0
+STATE booking B1 at A17 version 0; commits 0; simulated notifications 0
+
+=== PART 2: change to policy v2, clean B1 fixture ===
+  tick(0) -> SCANNED, work items: 1 [B1 on closed A17, booking v0, policy v1]
+INVESTIGATE v1 investigation proposes B12 (replay, call limit 6)
+  SYSTEM PROMPT (737 chars)
+  GOAL:                Resolve the booking affected by the closure of A17.
+  CALL 1 model:       {"tool":"READ_BOOKING","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":true},"policyVersion":1}
+  CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["B12","C03"]}
+  CALL 3 model:       {"bookingId":"B1","targetId":"B12","tool":"PROPOSE_REASSIGNMENT"}
+         observation: {"status":"AWAITING_APPROVAL","proposalId":"PROP_1","targetId":"B12"}
+  OUTCOME AWAITING_APPROVAL proposal=PROP_1 calls=3 invalid=0 toolRejections=0
+  Booking: B1 at A17 version 0
+OPERATOR (scripted) approve(PROP_1) -> APPROVED
+ACTIVATE activatePolicyV2() -> true; policy version now 2
+  activatePolicyV2() again -> false (already active; nothing changes)
+[D3-C] execute(PROP_1) captured policy v1 -> STALE
+STATE booking B1 at A17 version 0; commits 0; simulated notifications 0
+[D3-I] periodic checker after the version change:
+  tick(30) -> NOT_DUE, work items: 0
+  tick(60) -> SCANNED, work items: 1 [B1 on closed A17, booking v0, policy v2]
+  tick(120) -> SCANNED, work items: 0
+INVESTIGATE [D3-B][D3-H] fresh v2 investigation; model first ignores the list and proposes B12 (replay, call limit 6)
+  SYSTEM PROMPT (737 chars)
+  GOAL:                Resolve the booking affected by the closure of A17.
+  CALL 1 model:       {"tool":"READ_BOOKING","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":true},"policyVersion":2}
+  CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["C03"]}
+  CALL 3 model:       {"bookingId":"B1","targetId":"B12","tool":"PROPOSE_REASSIGNMENT"}
+         observation: {"status":"TOOL_REJECTED","error":"NOT_ACCESSIBLE","message":"Target space B12 refused: NOT_ACCESSIBLE."}
+  CALL 4 model:       {"bookingId":"B1","targetId":"C03","tool":"PROPOSE_REASSIGNMENT"}
+         observation: {"status":"AWAITING_APPROVAL","proposalId":"PROP_2","targetId":"C03"}
+  OUTCOME AWAITING_APPROVAL proposal=PROP_2 calls=4 invalid=0 toolRejections=1
+  Booking: B1 at A17 version 0
+[D3-D] direct propose(B12) under v2 -> refused: Target space B12 refused: NOT_ACCESSIBLE.
+PENDING PROP_2 -> C03 (captured policy v2)
+OPERATOR (scripted) approve(PROP_2) -> APPROVED
+[D3-E] execute(PROP_2) -> COMMITTED
+[D3-F] execute(PROP_2) again -> DUPLICATE
+  execute(PROP_1) again -> STALE (old proposal still never runs)
+STATE booking B1 at C03 version 1; commits 1; simulated notifications 1
+  notification (simulated): Booking B1 moved from A17 to C03 (proposal PROP_2).
+
+=== PART 3: B1 without the accessibility requirement, policy v2, clean fixture ===
+ACTIVATE activatePolicyV2() -> true; policy version now 2
+INVESTIGATE [D3-G] v2 investigation for a non-requiring booking (replay, call limit 6)
+  SYSTEM PROMPT (737 chars)
+  GOAL:                Resolve the booking affected by the closure of A17.
+  CALL 1 model:       {"tool":"READ_BOOKING","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"READ_BOOKING","booking":{"id":"B1","spaceId":"A17","durationHours":3,"version":0,"accessibilityRequired":false},"policyVersion":2}
+  CALL 2 model:       {"tool":"LIST_ALTERNATIVES","bookingId":"B1","targetId":""}
+         observation: {"status":"OK","tool":"LIST_ALTERNATIVES","candidates":["B12","C03"]}
+  CALL 3 model:       {"bookingId":"B1","targetId":"B12","tool":"PROPOSE_REASSIGNMENT"}
+         observation: {"status":"AWAITING_APPROVAL","proposalId":"PROP_1","targetId":"B12"}
+  OUTCOME AWAITING_APPROVAL proposal=PROP_1 calls=3 invalid=0 toolRejections=0
+  Booking: B1 at A17 version 0
+OPERATOR (scripted) approve(PROP_1) -> APPROVED
+  execute(PROP_1) -> COMMITTED
+  direct propose(D09) -> refused: Target space D09 refused: OCCUPIED. (general availability still enforced)
+STATE booking B1 at B12 version 1; commits 1; simulated notifications 1
+
+Exit status: 0
