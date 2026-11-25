@@ -18,11 +18,38 @@ public final class StudentApplication {
     private final ProposalManager manager;   // the only holder of the ProposalStore
     private final PeriodicDetector detector;
 
-    public StudentApplication() {
-        this.registry = fixtureRegistry();
+    /** Supplied B1 fixture, exactly as shipped (B1 requires an accessible space). Starts under policy version 1. */
+    public StudentApplication() { this(fixtureRegistry()); }
+
+    /**
+     * D3-G variant: the same fixture except that B1 does not require an accessible space. Only this
+     * application's copy differs; the raw Fixture data is never altered. Starts under policy version 1.
+     */
+    public static StudentApplication withoutAccessibilityRequirement() {
+        return new StudentApplication(fixtureRegistry(false));
+    }
+
+    private StudentApplication(ParkingRegistry registry) {
+        this.registry = registry;
         this.manager = new ProposalManager(registry, new ProposalStore(), policy, new SequentialIdGenerator(),
                 commits, notifications);
         this.detector = new PeriodicDetector(registry, manager, policy);
+    }
+
+    // ---- policy evolution (D3) -------------------------------------------------------------------------------
+
+    /** Version of the policy currently enforced by proposal, execution, investigation and detection. */
+    public int policyVersion() { return policy.getVersion(); }
+
+    /**
+     * Operator action: switch every collaborator to policy version 2 at once. Returns true if the version
+     * changed, false if version 2 (or later) is already active, in which case nothing changes. Existing
+     * proposals keep their captured version 1, so they go STALE at execution; bookings and spaces are untouched.
+     */
+    public boolean activatePolicyV2() {
+        if (policy.getVersion() >= 2) return false;
+        policy.activate(new PolicyV2());
+        return true;
     }
 
     // ---- periodic detection (detection only; investigations are started separately) ---------------------------
@@ -68,6 +95,11 @@ public final class StudentApplication {
 
     /** Builds the registry from the supplied raw fixture without altering it. */
     static ParkingRegistry fixtureRegistry() {
+        return fixtureRegistry((Boolean) Fixture.booking().get("accessibilityRequired"));
+    }
+
+    /** Same as fixtureRegistry(), but B1's accessibility requirement is set by the caller. */
+    static ParkingRegistry fixtureRegistry(boolean accessibilityRequired) {
         List<Space> spaces = new ArrayList<>();
         for (Map<String, Object> m : Fixture.spaces())
             spaces.add(new Space(new Identifier((String) m.get("id")),
@@ -75,7 +107,7 @@ public final class StudentApplication {
         Map<String, Object> b = Fixture.booking();
         Booking booking = new Booking(new Identifier((String) b.get("id")), new Identifier((String) b.get("spaceId")),
                 new Duration(((Number) b.get("durationHours")).intValue()),
-                ((Number) b.get("version")).intValue(), (Boolean) b.get("accessibilityRequired"));
+                ((Number) b.get("version")).intValue(), accessibilityRequired);
         return new ParkingRegistry(spaces, List.of(booking));
     }
 
@@ -129,5 +161,5 @@ public final class StudentApplication {
         out.append("Booking: B1 at ").append(b.getSpaceId().getValue()).append(" version ").append(b.getVersion());
         return out.toString();
     }
-    // TODO D3: evolve policy, preserve regressions, refactor and specify contracts.
+    // TODO D3: refactor and specify contracts.
 }
