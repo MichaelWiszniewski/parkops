@@ -10,7 +10,7 @@ import java.util.Optional;
  * Every call counts toward the limit, including invalid replies. It never approves or executes.
  */
 public final class AgentRunner {
-    public static final int MIN_CALLS = 1, MAX_CALLS = 6;
+    public static final int MIN_CALLS = AttemptBudget.MIN_LIMIT, MAX_CALLS = AttemptBudget.MAX_LIMIT;
 
     static final String SYSTEM_PROMPT = String.join("\n",
         "You are a parking-operations agent. Space A17 has closed. Resolve booking B1 using only these tools.",
@@ -40,11 +40,13 @@ public final class AgentRunner {
         List<ChatMessage> history = new ArrayList<>();
         history.add(new ChatMessage("system", SYSTEM_PROMPT));
         history.add(new ChatMessage("user", GOAL));
-        int calls = 0, invalid = 0, toolRejections = 0;
+        AttemptBudget budget = new AttemptBudget(limit);   // contracted: 0 <= used <= limit at every step
+        int invalid = 0, toolRejections = 0;
 
-        while (calls < limit) {
+        while (budget.remaining() > 0) {
             String raw;
-            calls++;
+            budget.consume();                                  // counted before the call, so invalid replies count too
+            int calls = budget.used();
             try {
                 raw = provider.next(List.copyOf(history));
             } catch (InterruptedException ex) {
@@ -71,7 +73,7 @@ public final class AgentRunner {
                 }
             }
         }
-        return end(RunStatus.STEP_LIMIT, Optional.empty(), calls, invalid, toolRejections, history);
+        return end(RunStatus.STEP_LIMIT, Optional.empty(), budget.used(), invalid, toolRejections, history);
     }
 
     private static String invalidObservation(ParseOutcome.Rejected r) {
